@@ -23,6 +23,8 @@ class OllamaAdvisorClient:
         temperature: float = 0.1,
         keep_alive: str = "5m",
         enabled: bool = True,
+        response_format: str | None = "json",
+        think: bool | None = None,
     ):
         self.host = str(host).strip().rstrip("/")
         self.model = str(model).strip()
@@ -30,6 +32,10 @@ class OllamaAdvisorClient:
         self.temperature = float(temperature)
         self.keep_alive = str(keep_alive).strip()
         self.enabled = bool(enabled)
+        # Optional Ollama tuning: constrain output to JSON, and toggle reasoning
+        # ("think") for reasoning models such as Qwen3 that otherwise emit <think> blocks.
+        self.response_format = str(response_format).strip() if response_format else None
+        self.think = think
         self._ready_cache: bool | None = None
         self._ready_checked_at = 0.0
 
@@ -156,6 +162,10 @@ class OllamaAdvisorClient:
             "keep_alive": self.keep_alive or "5m",
             "options": {"temperature": self.temperature},
         }
+        if self.response_format:
+            payload["format"] = self.response_format
+        if self.think is not None:
+            payload["think"] = bool(self.think)
         response = self._request_json(self._url("/api/generate"), payload, timeout=self.timeout_s)
         if not isinstance(response, dict):
             return {"stop_reason": "ollama_request_failed"}

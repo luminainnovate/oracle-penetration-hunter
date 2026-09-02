@@ -903,6 +903,14 @@ class MissionManager:
                 gate = self.confidence_gate.select(plan.phase.value, candidates, recommendation)
                 action = gate.action
                 action.phase = plan.phase.value
+                # Operator port override (--ports): force nmap to scan an explicit
+                # port list instead of whatever the advisor chose, so fingerprintable
+                # services are actually reached (and can yield versions → CVEs).
+                forced_ports = self.opsec.get("forced_ports")
+                if forced_ports and str(action.tool) == "nmap":
+                    if not isinstance(action.args, dict):
+                        action.args = {}
+                    action.args["ports"] = str(forced_ports)
                 action.requires_approval = bool(self.opsec.get("copilot_mode")) or self.approval_engine.requires_approval(action, gate.confidence)
                 self.metrics.observe("planner_gate_confidence", action.confidence, labels={"phase": action.phase})
 

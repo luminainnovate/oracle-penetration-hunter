@@ -17,7 +17,7 @@ from .ollama_client import OllamaAdvisorClient
 class ModelRouter:
     """Provides primary/fallback routing for advisory AI calls."""
 
-    VALID_BACKENDS = {"auto", "anthropic", "ollama", "council", "deterministic", "nim"}
+    VALID_BACKENDS = {"auto", "anthropic", "ollama", "council", "deterministic", "nim", "llamacpp"}
 
     def __init__(
         self,
@@ -36,6 +36,7 @@ class ModelRouter:
         self.backend = self._resolve_backend()
         self.ollama = ollama_client if ollama_client is not None else self._build_ollama_client()
         self.nim = self._build_nim_client()
+        self.llamacpp = self._build_llamacpp_client()
         self.council = CouncilAdvisorClient(
             primary_client=self.nim if self._is_ready(self.nim) else self.client,
             secondary_client=self.ollama,
@@ -72,6 +73,11 @@ class ModelRouter:
         except Exception:
             temp_value = 0.1
 
+        raw_think = self.ollama_config.get("think", None)
+        think = None if raw_think is None else bool(raw_think)
+        raw_format = self.ollama_config.get("format", "json")
+        response_format = str(raw_format).strip() if raw_format else None
+
         return OllamaAdvisorClient(
             host=str(self.ollama_config.get("host", "http://127.0.0.1:11434")),
             model=str(self.ollama_config.get("model", "llama3.2:3b")),
@@ -79,6 +85,8 @@ class ModelRouter:
             temperature=temp_value,
             keep_alive=str(self.ollama_config.get("keep_alive", "5m")),
             enabled=bool(self.ollama_config.get("enabled", True)),
+            response_format=response_format,
+            think=think,
         )
 
     def _build_nim_client(self) -> NIMAdvisorClient:
@@ -89,6 +97,24 @@ class ModelRouter:
             temperature=float(nim_cfg.get("temperature", 0.1)),
             max_tokens=int(nim_cfg.get("max_tokens", 1024)),
             timeout=int(nim_cfg.get("timeout", 60)),
+        )
+
+    def _build_llamacpp_client(self) -> NIMAdvisorClient:
+        cfg = self.config.get("llamacpp", {}) if isinstance(self.config.get("llamacpp"), dict) else {}
+        base_url = str(
+            self.env.get("ORACLE_LLAMACPP_BASE_URL")
+            or cfg.get("base_url", "http://127.0.0.1:8081")
+        ).rstrip("/")
+        # The OpenAI SDK appends /chat/completions to base_url; ensure the /v1 root is present.
+        if not base_url.endswith("/v1"):
+            base_url = f"{base_url}/v1"
+        return NIMAdvisorClient(
+            api_key=self.env.get("ORACLE_LLAMACPP_KEY") or cfg.get("api_key", "sk-local"),
+            model=self.env.get("ORACLE_LLAMACPP_MODEL") or cfg.get("model", "local-model"),
+            base_url=base_url,
+            temperature=float(cfg.get("temperature", 0.1)),
+            max_tokens=int(cfg.get("max_tokens", 1024)),
+            timeout=int(cfg.get("timeout", 120)),
         )
 
     @staticmethod
@@ -106,6 +132,10 @@ class ModelRouter:
 
     def _select_active(self):
         if self.backend == "deterministic":
+            return self.local
+        if self.backend == "llamacpp":
+            if self._is_ready(self.llamacpp):
+                return self.llamacpp
             return self.local
         if self.backend == "nim":
             if self._is_ready(self.nim):

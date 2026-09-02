@@ -152,6 +152,9 @@ def _advisor_status_line(ai_client) -> str:
             return f"AI advisory: Ollama selected but unavailable (model={model}), deterministic fallback active"
         if backend == "council":
             return "AI advisory: Council selected but no model delegate is ready, deterministic fallback active"
+        if backend == "llamacpp":
+            model = str(getattr(router.llamacpp, "model", "unknown"))
+            return f"AI advisory: llama.cpp selected but unavailable (model={model}), deterministic fallback active"
         if backend == "deterministic":
             return "AI advisory: deterministic-only mode"
         return "AI advisory: no model backend ready, deterministic fallback active"
@@ -162,6 +165,9 @@ def _advisor_status_line(ai_client) -> str:
     if active is getattr(router, "ollama", None):
         model = str(getattr(active, "model", "unknown"))
         return f"AI advisory: Ollama local backend active (model={model})"
+    if active is getattr(router, "llamacpp", None):
+        model = str(getattr(active, "model", "unknown"))
+        return f"AI advisory: llama.cpp local backend active (model={model})"
     return "AI advisory: Anthropic backend active"
 
 
@@ -273,12 +279,25 @@ def run_live(args):
     layout = make_layout()
     last_action, last_result, thinking = None, None, ""
 
+    # Holds the active Live dashboard so approval prompts can suspend it.
+    # The full-screen Live display (screen=True) repaints several times a second
+    # and would otherwise paint over the interactive Confirm prompt, making
+    # copilot approvals impossible to see or answer.
+    live_ref = {"live": None}
+
     def approve_cb(action: Action) -> bool:
         """Interactive approval prompt (used in --copilot mode)."""
-        console.print(f"\n[yellow]⚠ Approval needed: {action.tool} on {action.target}[/yellow]")
-        console.print(f"  Args: {action.args}")
-        console.print(f"  Reason: {action.reasoning[:100]}")
-        return Confirm.ask("Execute?")
+        live = live_ref.get("live")
+        if live is not None:
+            live.stop()  # drop back to the normal screen so the prompt is visible
+        try:
+            console.print(f"\n[yellow]⚠ Approval needed: {action.tool} on {action.target}[/yellow]")
+            console.print(f"  Args: {action.args}")
+            console.print(f"  Reason: {action.reasoning[:100]}")
+            return Confirm.ask("Execute?")
+        finally:
+            if live is not None:
+                live.start(refresh=True)  # resume the live dashboard
 
     audit = None
     if args.audit_log:
@@ -310,6 +329,7 @@ def run_live(args):
         "action_jitter": jitter,
         "network_throttle": bool(getattr(args, "network_throttle", False)),
         "copilot_mode": bool(getattr(args, "copilot", False)),
+        "forced_ports": (str(getattr(args, "ports", "")).replace(" ", "") or None),
     }
 
     engine = MissionEngine(
@@ -344,6 +364,7 @@ def run_live(args):
             console.print("[yellow]Dashboard auth credentials not set; non-loopback clients are blocked by default.[/yellow]")
 
     with Live(layout, refresh_per_second=3, screen=True) as live:
+        live_ref["live"] = live
         for event in engine.run():
             etype = event.get("type", "")
 
@@ -544,6 +565,7 @@ Examples:
     p.add_argument("--mission-name",  metavar="NAME")
     p.add_argument("--objective",     default="Identify all reachable services and vulnerabilities")
     p.add_argument("--profile",       choices=["stealth","normal","aggressive"], default="normal")
+    p.add_argument("--ports",         metavar="LIST", help="Force nmap to scan these ports (e.g. 22,80,443,5432) instead of the advisor's choice")
     p.add_argument("--max-iter",      type=int,    default=30, metavar="N")
     p.add_argument("--api-key",       metavar="KEY")
     p.add_argument("--demo",          action="store_true")
