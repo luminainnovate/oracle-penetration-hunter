@@ -180,7 +180,7 @@ being assembled into the knowledge graph:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Panda1847/oracle-penetration-hunter.git
+git clone https://github.com/luminainnovate/oracle-penetration-hunter.git
 cd oracle-penetration-hunter
 
 # Install dependencies
@@ -271,7 +271,7 @@ Released under the [MIT License](LICENSE).
 
 <div align="center">
 
-**Built by [Panda1847](https://github.com/Panda1847) / NULLSEC**
+**Built by [luminainnovate](https://github.com/luminainnovate)**
 
 If ORACLE is useful to your work, consider giving it a ⭐ — it genuinely helps other
 red teamers find the project.

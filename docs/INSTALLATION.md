@@ -13,7 +13,7 @@
 sudo apt update
 sudo apt install -y python3 python3-pip python3-venv git
 
-git clone https://github.com/Panda1847/oracle-penetration-hunter.git
+git clone https://github.com/luminainnovate/oracle-penetration-hunter.git
 cd oracle-penetration-hunter
 
 python3 -m venv .venv
@@ -24,7 +24,7 @@ pip install -r requirements.txt
 ## Option 2 — Docker
 
 ```bash
-git clone https://github.com/Panda1847/oracle-penetration-hunter.git
+git clone https://github.com/luminainnovate/oracle-penetration-hunter.git
 cd oracle-penetration-hunter
 
 docker build -t oracle-hunter -f docker/Dockerfile .
@@ -34,7 +34,7 @@ docker run -it --rm -v $(pwd)/missions:/app/missions oracle-hunter
 ## Option 3 — Manual (any Linux/macOS)
 
 ```bash
-git clone https://github.com/Panda1847/oracle-penetration-hunter.git
+git clone https://github.com/luminainnovate/oracle-penetration-hunter.git
 cd oracle-penetration-hunter
 python3 -m venv .venv
 source .venv/bin/activate

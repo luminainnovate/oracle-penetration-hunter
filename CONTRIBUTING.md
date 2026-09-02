@@ -15,7 +15,7 @@ sees.
 ## Development Setup
 
 ```bash
-git clone https://github.com/Panda1847/oracle-penetration-hunter.git
+git clone https://github.com/luminainnovate/oracle-penetration-hunter.git
 cd oracle-penetration-hunter
 python -m venv .venv
 source .venv/bin/activate

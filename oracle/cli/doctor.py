@@ -111,13 +111,14 @@ def run_doctor(
     ai_cfg = _load_ai_config()
     advisor = ai_cfg.get("advisor", {}) if isinstance(ai_cfg.get("advisor"), dict) else {}
     ollama = ai_cfg.get("ollama", {}) if isinstance(ai_cfg.get("ollama"), dict) else {}
+    llamacpp = ai_cfg.get("llamacpp", {}) if isinstance(ai_cfg.get("llamacpp"), dict) else {}
 
     backend = str(
         os.environ.get("ORACLE_AI_BACKEND")
         or os.environ.get("ORACLE_ADVISOR_BACKEND")
         or advisor.get("backend", "auto")
     ).strip().lower()
-    if backend not in {"auto", "anthropic", "ollama", "council", "deterministic"}:
+    if backend not in {"auto", "anthropic", "ollama", "council", "deterministic", "nim", "llamacpp"}:
         backend = "auto"
 
     anthropic_ready = bool(os.environ.get("ORACLE_API_KEY") or os.environ.get("ANTHROPIC_API_KEY"))
@@ -138,6 +139,11 @@ def run_doctor(
     elif backend == "council":
         advisor_ready = anthropic_ready or ollama_ready
         advisor_detail = "council backend selected (requires at least one ready model delegate)"
+    elif backend == "llamacpp":
+        llamacpp_base = str(llamacpp.get("base_url", "http://127.0.0.1:8081")).strip()
+        llamacpp_model = str(llamacpp.get("model", "local-model")).strip()
+        advisor_ready = _check_import("openai")
+        advisor_detail = f"llama.cpp backend selected ({llamacpp_model} @ {llamacpp_base})"
     else:
         advisor_ready = anthropic_ready or ollama_ready
         advisor_detail = "auto backend (anthropic or ollama)"

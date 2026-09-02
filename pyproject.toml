@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [
-    { name = "Michael Lastovich (Panda1847)", email = "TODO@example.com" }
+    { name = "luminainnovate" }
 ]
 keywords = [
     "penetration-testing",
@@ -39,12 +39,12 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Panda1847/oracle-penetration-hunter"
-Documentation = "https://github.com/Panda1847/oracle-penetration-hunter/tree/main/docs"
-Issues = "https://github.com/Panda1847/oracle-penetration-hunter/issues"
+Homepage = "https://github.com/luminainnovate/oracle-penetration-hunter"
+Documentation = "https://github.com/luminainnovate/oracle-penetration-hunter/tree/main/docs"
+Issues = "https://github.com/luminainnovate/oracle-penetration-hunter/issues"
 
 [project.scripts]
-oracle = "oracle.core.cli:main"
+oracle = "oracle.cli.main:main"
 
 [tool.ruff]
 line-length = 100

@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-LABEL maintainer="Michael Lastovich (Panda1847)"
+LABEL maintainer="luminainnovate"
 LABEL description="ORACLE Penetration Hunter — AI-assisted red team mission orchestration"
 
 WORKDIR /app
